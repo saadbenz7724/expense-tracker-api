@@ -15,7 +15,7 @@ export class Category{
     icon?: string;
 
     @Column({nullable: true})
-    colour?: string;
+    color?: string;
 
     @Column({name: 'is_default', default: false})
     isDefault?: boolean;

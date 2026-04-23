@@ -55,28 +55,56 @@ export class ExpensesService {
             limit = 10,
         } = query;
 
+        const skip = (page - 1) * limit;
+        const whereConditions: any = { userId, isDeleted: false };
+        if (type) {
+            whereConditions.type = type;
+        }
+        if (categoryId) {
+            whereConditions.categoryId = categoryId;
+        }
+        if (!startDate && !endDate && !month && !year) {
+            const [data, total] = await this.expenseRepository.findAndCount({
+                where: whereConditions,
+                relations: ['category'],
+                order: { expenseDate: 'DESC' },
+                skip,
+                take: limit,
+            });
+            return {
+                data,
+                meta: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
+                    hasNextPage: page < Math.ceil(total / limit),
+                    hasPrePage: page > 1,
+                },
+            };
+        }
+        
         const qb = this.expenseRepository.createQueryBuilder('expense').leftJoinAndSelect('expense.category', 'category')
-              .where('expense.user_id = :userId', {userId}).andWhere('expense.isDeleted = false').orderBy('expense.expense_date', 'DESC')
-              .addOrderBy('expense.created_at', 'DESC');
+              .where('expense.userId = :userId', {userId}).andWhere('expense.isDeleted = false', {isDeleted: false});
 
         if(type){
             qb.andWhere('expense.type = :type', {type});
         }
         if(categoryId){
-            qb.andWhere('expense.category_id = :categoryId', {categoryId});
+            qb.andWhere('expense.categoryId = :categoryId', {categoryId});
         }
         if(startDate && endDate){
-            qb.andWhere('expense.expense_date BETWEEN :startDate AND :endDate', {
+            qb.andWhere('expense.expenseDate BETWEEN :startDate AND :endDate', {
                 startDate,
                 endDate,
             });
         }
         if (month && year) {
-            qb.andWhere('MONTH(expense.expense_date) = :month', {month}).andWhere('YEAR(expnese.expense_date) = :year', {year});
+            qb.andWhere('MONTH(expense.expenseDate) = :month', {month}).andWhere('YEAR(expense.expenseDate) = :year', {year});
         } else if (year) {
-            qb.andWhere('YEAR(expense.expense_date) = :year', {year});
+            qb.andWhere('YEAR(expense.expenseDate) = :year', {year});
         }
-        const skip = (page - 1) * limit;
+        qb.orderBy('expense.expenseDate', 'DESC');
         qb.skip(skip).take(limit);
         const [data, total] = await qb.getManyAndCount();
 

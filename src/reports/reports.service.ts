@@ -206,7 +206,7 @@ export class ReportsService {
           budgetId: budget.id,
           category: budget.category!.name,
           icon: budget.category!.icon,
-          color: budget.category!.colour,
+          color: budget.category!.color,
           limitAmount,
           spentAmount,
           remaining: Math.max(0, limitAmount - spentAmount),
@@ -220,15 +220,12 @@ export class ReportsService {
   }
 
   async getRecentTransactions(userId: number, limit: number = 10) {
-    const expenses = await this.expenseRepository
-      .createQueryBuilder('expense')
-      .leftJoinAndSelect('expense.category', 'category')
-      .where('expense.user_id = :userId', { userId })
-      .andWhere('expense.is_deleted = false')
-      .orderBy('expense.expense_date', 'DESC')
-      .addOrderBy('expense.created_at', 'DESC')
-      .take(limit)
-      .getMany();
+    const expenses = await this.expenseRepository.find({
+      where: { userId, isDeleted: false },
+      relations: ['category'],
+      order: { expenseDate: 'DESC' },
+      take: limit
+    });
 
     return {
       count: expenses.length,
@@ -241,7 +238,7 @@ export class ReportsService {
         category: {
           name: e.category!.name,
           icon: e.category!.icon,
-          color: e.category!.colour,
+          color: e.category!.color,
         },
       })),
     };

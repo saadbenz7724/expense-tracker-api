@@ -11,5 +11,5 @@ export class UpdateCategoryDto{
 
     @IsOptional()
     @IsString()
-    colour?: string;
+    color?: string;
 }
